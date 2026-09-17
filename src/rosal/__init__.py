@@ -36,7 +36,7 @@ def _latest_subdir(base: Path) -> Path:
 
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 DEFAULT_WORK_DIR = Path.home() / "rosal"
 
