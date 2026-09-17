@@ -24,14 +24,13 @@ rosal --apk <path_to_apk>
 The command runs the fetch, extraction, catalog, matching and mapping stages in sequence.
 
 
-If you want to specify the work directory:
+By default, intermediate files and `matches.tiny` are written to `~/rosal`. 
+Use `--work-dir` to choose another directory:
 
 ```bash
 rosal --apk <path_to_apk> --work-dir ./anything_you_want
 ```
 
-By default, intermediate files and `matches.tiny` are written to `~/rosal`. 
-Use `--work-dir` to choose another directory.
 
 
 ## Preliminary
@@ -51,3 +50,10 @@ features_file = work_dir / "features.ndjson"
 catalog_file = work_dir / "catalog.json"
 matches_file = work_dir / "matches.json"
 mapping_file = work_dir / "matches.tiny"
+
+
+## Using the matches.tiny file
+
+```bash
+jadx-gui --mappings-path <path_to>/matches.tiny "$APK"
+```
