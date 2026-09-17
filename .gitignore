@@ -1,3 +1,4 @@
 build/
+dist/
 rosal.egg-info
 src/rosal/__pycache__/
