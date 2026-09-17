@@ -9,6 +9,10 @@ No AI is involved in the process.
 
 ## Install
 
+### From local repository
+
+Clone the repository, then cd to its directory and:
+
 ```bash
 python -m pip install .
 ```
