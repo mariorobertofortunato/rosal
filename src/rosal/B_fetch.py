@@ -327,7 +327,7 @@ def main(markers_file=None, library_dex_dir=None):
 
     with markers_file.open(encoding="utf-8") as markers:
 
-        for line in tqdm(markers, total=marker_count, desc="Progress", colour="green"):
+        for line in tqdm(markers, total=marker_count, desc="Fetching library DEXs", colour="green"):
             parsed_marker = parse_marker(line)
 
             if parsed_marker is None or parsed_marker in already_processed:
@@ -336,6 +336,8 @@ def main(markers_file=None, library_dex_dir=None):
             already_processed.add(parsed_marker)
 
             process_marker(parsed_marker, library_dex_dir)
+
+    print(f"[+] Fetching library DEXs complete\n")
 
 
 if __name__ == "__main__":

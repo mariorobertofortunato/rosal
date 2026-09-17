@@ -401,6 +401,7 @@ def main(library_dex_dir=None, catalog_file=None, matches_file=None):
     if not catalog_file.is_file():
         sys.exit(f"ERROR: catalog not found: {catalog_file}")
 
+    dex_paths = list(library_dex_dir.glob("*.dex"))
     catalog_file = Path(catalog_file)
     matches_file = Path(matches_file)
 
@@ -411,7 +412,7 @@ def main(library_dex_dir=None, catalog_file=None, matches_file=None):
 
     # Library classes
     library_classes = [
-        make_class(entry) for entry in extract_all_library_dex(library_dex_dir)
+        make_class(entry) for entry in extract_all_library_dex(dex_paths)
     ]
     
     matches = match_classes(target_classes, library_classes)
@@ -431,10 +432,10 @@ def main(library_dex_dir=None, catalog_file=None, matches_file=None):
         encoding="utf-8",
     )
 
-    print(f"library classes : {len(library_classes)}")
-    print(f"target classes  : {len(target_classes)}")
-    print(f"matches         : {len(matches)}")
-    print(f"output          : {matches_file}")
+    print(f"[+] library classes : {len(library_classes)}")
+    print(f"[+] target classes  : {len(target_classes)}")
+    print(f"[+] matches         : {len(matches)}")
+    print(f"[+] output          : {matches_file}\n")
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ def main(features_file=None, catalog_file=None):
 
     features_count = count_features(features_file)
 
-    for line in tqdm(features_file.open(encoding="utf-8"), total=features_count, desc="Progress", colour="green"):
+    for line in tqdm(features_file.open(encoding="utf-8"), total=features_count, desc="Parsing features --> catalog", colour="green"):
         line = line.strip()
 
         if not line:
@@ -107,14 +107,14 @@ def main(features_file=None, catalog_file=None):
     with catalog_file.open(mode="w", encoding="utf-8") as out:
         json.dump(catalog, out, indent=2, sort_keys=False)
 
-    print(f"classes               : {len(classes)}")
-    print(f"artifacts             : {len(artifacts)}")
-    print(f"fp distinct           : {len(fp_index)}")
-    print(f"strings distinct      : {len(string_index)}")
-    print(f"numbers distinct      : {len(number_index)}")
-    print(f"invokes distinct      : {len(invoke_index)}")
-    print(f"class_refs distinct   : {len(class_ref_index)}")
-    print(f"output                : {catalog_file}")
+    print(f"[+] classes               : {len(classes)}")
+    print(f"[+] artifacts             : {len(artifacts)}")
+    print(f"[+] fp distinct           : {len(fp_index)}")
+    print(f"[+] strings distinct      : {len(string_index)}")
+    print(f"[+] numbers distinct      : {len(number_index)}")
+    print(f"[+] invokes distinct      : {len(invoke_index)}")
+    print(f"[+] class_refs distinct   : {len(class_ref_index)}")
+    print(f"[+] output                : {catalog_file}\n")
 
 
 if __name__ == "__main__":

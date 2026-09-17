@@ -358,7 +358,7 @@ def main(target_dex_dir=None, features_file=None):
 
     with features_file.open(mode="w", encoding="utf-8") as output_handle:
 
-        for dex_path in tqdm(dex_files, total=dex_files_count, desc="Progress", colour="green"):
+        for dex_path in tqdm(dex_files, total=dex_files_count, desc="Extracting features from target DEXs", colour="green"):
             provenance = dex_path.stem
 
             for feature in extract_dex_features(dex_path,provenance):
@@ -371,7 +371,8 @@ def main(target_dex_dir=None, features_file=None):
                     + "\n"
                 )
 
-    print(f"[+] output: {features_file}")
+    print(f"[+] Extracting features complete")
+    print(f"[+] output: {features_file}\n")
 
 
 if __name__ == "__main__":

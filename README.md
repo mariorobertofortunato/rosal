@@ -17,12 +17,31 @@ Clone the repository, then cd to its directory and:
 python -m pip install .
 ```
 
+## Prerequisites & Dependencies
+Internal dependencies to Androguard, loguru and tqdm should be automatically resolved when installing. If not, install manually.
+
+The tool relies on the Android SDK in order to work. Install it in `~/Android/Sdk`
+
+```
+https://developer.android.com/tools/releases/build-tools
+https://developer.android.com/tools/releases/platform-tools
+```
+
+Java is also required. Install it if you already haven't.
+
+
+
 ## Run
+
+```bash
+# (Optional) Define APK path
+export APK=...
+```
 
 Basic usage:
 
 ```bash
-rosal --apk <path_to_apk>
+rosal --apk "$APK" # or <path_to_apk>
 ```
 
 The command runs the fetch, extraction, catalog, matching and mapping stages in sequence.
@@ -32,21 +51,12 @@ By default, intermediate files and `matches.tiny` are written to `~/rosal`.
 Use `--work-dir` to choose another directory:
 
 ```bash
-rosal --apk <path_to_apk> --work-dir ./anything_you_want
+rosal --apk "$APK" --work-dir ./anything_you_want
 ```
-
-
-
-## Preliminary
-
-```bash
-# (Optional) Define APK path
-export APK=...
-```
-
 
 ## Files and Directories
 
+```text
 markers_file = work_dir / "markers.txt"
 library_dex_dir = work_dir / "library_dex"
 target_dex_dir = work_dir / "target_dex"
@@ -54,7 +64,7 @@ features_file = work_dir / "features.ndjson"
 catalog_file = work_dir / "catalog.json"
 matches_file = work_dir / "matches.json"
 mapping_file = work_dir / "matches.tiny"
-
+```
 
 ## Using the matches.tiny file
 

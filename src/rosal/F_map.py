@@ -75,9 +75,9 @@ def main(matches_file=None, mapping_file=None):
 
                 out.write(f"\tf\t{desc}\t{tgt_name}\t{lib_name}\n")
 
-    print(f"accepted : {len(seen)}")
-    print(f"methods  : {total_methods - skipped}/{total_methods} (skipped: {skipped})")
-    print(f"output   : {mapping_file.absolute()}")
+    print(f"[+] accepted : {len(seen)}")
+    print(f"[+] methods  : {total_methods - skipped}/{total_methods} (skipped: {skipped})")
+    print(f"[+] output   : {mapping_file.absolute()}\n")
 
 
 if __name__ == "__main__":
