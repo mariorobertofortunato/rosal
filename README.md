@@ -40,12 +40,6 @@ Clone the repository, then `cd` to its directory and:
 python -m pip install .
 ```
 
-Use the `-e` option if you wish to make it an editable installation
-
-```bash
-pip install -e .
-```
-
 ### Installing from PyPi (recommended)
 
 ```bash
