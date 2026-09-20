@@ -16,6 +16,16 @@ Any other purpose is not supported or endorsed by the creators by any means.
 Don't be a cunt.
 ```
 
+## How it works
+
+R8/ProGuard can rename any class, method or field that belongs to the app itself, but cannot rename references to platform APIs (`android/*`, `java/*`, `javax/*`). Those symbols must stay intact to be resolved by the OS at runtime.
+
+Rosal treats every reference to a platform API found inside a method (a call, a parameter type, an annotation type, a superclass) as an **anchor** = something that the obfuscator can't touch. 
+Two methods that share the exact same set of anchors are, with very high confidence, the same method.
+
+The standard libraries used in the matching process are not a fixed set of references. 
+Instead, rosal uses the `META-INF/*.version` markers embedded in the APK to know exactly which group/artifact/version was bundled, so the matching library `.dex` files are fetched from the same Maven repositories the original build used.
+
 ## Getting started
 
 ### Prerequisites & Dependencies
@@ -38,12 +48,6 @@ Clone the repository, then `cd` to its directory and:
 
 ```bash
 python -m pip install .
-```
-
-Use the `-e` option if you wish to make it an editable installation
-
-```bash
-pip install -e .
 ```
 
 ### Installing from PyPi (recommended)
