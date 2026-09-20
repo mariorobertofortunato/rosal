@@ -1,4 +1,5 @@
  # ROSAL
+![PyPI - Version](https://img.shields.io/pypi/v/rosal)
 
 ROSAL (Reverse Obfuscated Standard Android Libraries) helps reverse-engineer Android applications by mapping obfuscated classes from an APK to their plain-text equivalents in the declared standard libraries (androidx, core, ...).
 
