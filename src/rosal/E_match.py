@@ -243,10 +243,10 @@ def class_compatible(target_cls: ClassInfo, library_cls: ClassInfo) -> bool:
     return True
 
 
-def find_anchors(target_cls: ClassInfo, library_cls: ClassInfo, method_index, field_index):
+def find_anchors(target_cls: ClassInfo, library_cls: ClassInfo, library_method_index, library_field_index):
 
-    def resolve(tar_item, index):
-        locations = index.get(tar_item.anchor_key(), [])
+    def resolve(target_item, index):
+        locations = index.get(target_item.anchor_key(), [])
         in_class = [item for owner, item in locations if owner is library_cls]
         if len(in_class) != 1:
             return None
@@ -256,7 +256,7 @@ def find_anchors(target_cls: ClassInfo, library_cls: ClassInfo, method_index, fi
     for method in target_cls.methods:
         if not (method.is_concrete() and method.has_anchor_evidence()):
             continue
-        match = resolve(method, method_index)
+        match = resolve(method, library_method_index)
         if match is not None:
             method_anchors.append((method, match))
 
@@ -264,7 +264,7 @@ def find_anchors(target_cls: ClassInfo, library_cls: ClassInfo, method_index, fi
     for field in target_cls.fields:
         if not field.has_anchor_evidence():
             continue
-        match = resolve(field, field_index)
+        match = resolve(field, library_field_index)
         if match is not None:
             field_anchors.append((field, match))
 
@@ -285,12 +285,12 @@ def build_mapping(target_item, library_item) -> dict:
     }
 
 
-def verify_class(target_cls: ClassInfo, library_cls: ClassInfo, method_index, field_index):
+def verify_class(target_cls: ClassInfo, library_cls: ClassInfo, library_method_index, library_field_index):
     if not class_compatible(target_cls, library_cls):
         return None
 
     method_anchors, field_anchors = find_anchors(
-        target_cls, library_cls, method_index, field_index
+        target_cls, library_cls, library_method_index, library_field_index
     )
 
     if not anchors_are_distinct(method_anchors):
@@ -299,10 +299,10 @@ def verify_class(target_cls: ClassInfo, library_cls: ClassInfo, method_index, fi
         return None
 
     method_mappings = [
-        build_mapping(tar_m, lib_m) for tar_m, lib_m in method_anchors if tar_m.name != lib_m.name
+        build_mapping(target_method, library_method) for target_method, library_method in method_anchors if target_method.name != library_method.name
     ]
     field_mappings = [
-        build_mapping(tar_field, lib_field) for tar_field, lib_field in field_anchors if tar_field.name != lib_field.name
+        build_mapping(target_field, library_field) for target_field, library_field in field_anchors if target_field.name != library_field.name
     ]
 
     if not method_mappings and not field_mappings and not method_anchors and not field_anchors:
@@ -347,17 +347,17 @@ def match_classes(
     library_classes = [c for c in library_classes  if c.class_name not in overlap]
 
 
-    method_index = build_method_index(library_classes)
-    field_index  = build_field_index(library_classes)
-    class_index  = build_class_index(library_classes)
+    library_method_index = build_method_index(library_classes)
+    library_field_index  = build_field_index(library_classes)
+    library_class_index  = build_class_index(library_classes)
 
     candidates: dict[int, dict[int, tuple[ClassInfo, ClassInfo, dict]]] = {}
 
     #for target_cls in target_classes:
     for target_cls in tqdm(target_classes, total=len(target_classes), desc="Progress", colour="green"):
-        for library_cls in class_index.get(target_cls.lookup_key(), []):
+        for library_cls in library_class_index.get(target_cls.lookup_key(), []):
             verified = verify_class(
-                target_cls, library_cls, method_index, field_index
+                target_cls, library_cls, library_method_index, library_field_index
             )
             if verified is None:
                 continue
