@@ -236,14 +236,15 @@ def extract_field(field):
     }
 
 # Keep in mind that this method is also used for extracting features 
-# from library dex (so name variables accordingly, generalizing is ok, 
-# basically DONT TOUCH THIS UNLESS EXTREMELY NECESSARY)
-def extract_dex_features(dex_path, provenance):
+# from library dex (so name variables accordingly = generalizing, is ok. 
+# Basically DONT TOUCH THIS UNLESS EXTREMELY NECESSARY)
+def extract_dex_features(dex_path, provenance, label):
     data = dex_path.read_bytes()
 
     dex = DEX(data)
+    classes = dex.get_classes()
 
-    for cls in dex.get_classes():
+    for cls in tqdm(classes, total=len(classes), desc=f"Extracting {label} features ({dex_path.name})", colour="green"):
         class_name = cls.get_name()
         fields = []
         methods = []
@@ -349,7 +350,6 @@ def main(target_dex_dir=None, features_file=None):
     target_dex_dir = Path(target_dex_dir)
     features_file = Path(features_file)
     dex_files = sorted(target_dex_dir.glob("*.dex"))
-    dex_files_count = len(dex_files)
 
     if not dex_files:
         sys.exit(f"No DEX files found in {target_dex_dir}")
@@ -358,10 +358,10 @@ def main(target_dex_dir=None, features_file=None):
 
     with features_file.open(mode="w", encoding="utf-8") as output_handle:
 
-        for dex_path in tqdm(dex_files, total=dex_files_count, desc="Extracting features from target DEXs", colour="green"):
+        for dex_path in dex_files:
             provenance = dex_path.stem
 
-            for feature in extract_dex_features(dex_path,provenance):
+            for feature in extract_dex_features(dex_path,provenance, label="target"):
                 output_handle.write(
                     json.dumps(
                         feature,
@@ -371,7 +371,7 @@ def main(target_dex_dir=None, features_file=None):
                     + "\n"
                 )
 
-    print(f"[+] Extracting features complete")
+    print(f"[+] Extracting target features complete")
     print(f"[+] output: {features_file}\n")
 
 

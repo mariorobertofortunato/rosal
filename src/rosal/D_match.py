@@ -325,7 +325,8 @@ def extract_all_library_dex(paths):
         p = Path(p)
         if not p.is_file():
             sys.exit(f"ERROR: DEX not found: {p}")
-        classes.extend(extract_dex_features(p, p.name))
+        classes.extend(extract_dex_features(p, p.name, label="library"))
+    print(f"[+] Extracting library features complete\n")
     return classes
 
 
@@ -348,7 +349,6 @@ def match_classes(
 
     candidates: dict[int, dict[int, tuple[ClassInfo, ClassInfo, dict]]] = {}
 
-    #for target_cls in target_classes:
     for target_cls in tqdm(target_classes, total=len(target_classes), desc="Matching classes", colour="green"):
         for library_cls in library_class_index.get(target_cls.lookup_key(), []):
             verified = verify_class(
