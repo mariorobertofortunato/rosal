@@ -319,11 +319,6 @@ def verify_class(target_cls: ClassInfo, library_cls: ClassInfo, library_method_i
 # I/O e main
 # --------------------------------------------------------------------------- #
 
-def load_json(path):
-    with path.open("r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
 def extract_all_library_dex(paths):
     classes = []
     for p in paths:
@@ -354,7 +349,7 @@ def match_classes(
     candidates: dict[int, dict[int, tuple[ClassInfo, ClassInfo, dict]]] = {}
 
     #for target_cls in target_classes:
-    for target_cls in tqdm(target_classes, total=len(target_classes), desc="Progress", colour="green"):
+    for target_cls in tqdm(target_classes, total=len(target_classes), desc="Matching classes", colour="green"):
         for library_cls in library_class_index.get(target_cls.lookup_key(), []):
             verified = verify_class(
                 target_cls, library_cls, library_method_index, library_field_index
@@ -393,22 +388,27 @@ def match_classes(
     return matches
 
 
-def main(library_dex_dir=None, catalog_file=None, matches_file=None):
+def main(library_dex_dir=None, features_file=None, matches_file=None):
 
-    if library_dex_dir is None or catalog_file is None or matches_file is None:
-        sys.exit("ERROR: library_dex_dir, catalog_file and matches_file must be specified")
+    if library_dex_dir is None or features_file is None or matches_file is None:
+        sys.exit("ERROR: library_dex_dir, features_file and matches_file must be specified")
 
-    if not catalog_file.is_file():
-        sys.exit(f"ERROR: catalog not found: {catalog_file}")
+    if not features_file.is_file():
+        sys.exit(f"ERROR: features not found: {features_file}")
 
     dex_paths = list(library_dex_dir.glob("*.dex"))
-    catalog_file = Path(catalog_file)
+    features_file = Path(features_file)
     matches_file = Path(matches_file)
 
 
     # Target classes
-    catalog = load_json(catalog_file)
-    target_classes = [make_class(entry) for entry in catalog.get("classes", [])]
+    target_classes = []
+    with features_file.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            target_classes.append(make_class(json.loads(line)))
 
     # Library classes
     library_classes = [

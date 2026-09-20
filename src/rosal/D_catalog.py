@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# DEPRECATED: This module is deprecated and will be removed in future versions.
+
 import json
 import sys
 from collections import Counter, defaultdict

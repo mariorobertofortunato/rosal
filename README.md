@@ -151,7 +151,6 @@ markers_file = work_dir / "markers.txt"
 library_dex_dir = work_dir / "library_dex"
 target_dex_dir = work_dir / "target_dex"
 features_file = work_dir / "features.ndjson"
-catalog_file = work_dir / "catalog.json"
 matches_file = work_dir / "matches.json"
 mapping_file = work_dir / "matches.tiny"
 ```
