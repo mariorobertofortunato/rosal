@@ -166,18 +166,10 @@ def extract_dex_features(dex_path, provenance, label):
         except Exception:
             superclass = None
 
-        # class access
-        try:
-            class_access = cls.get_access_flags()
-        except Exception:
-            class_access = 0
-
-
         yield {
             "class_name": class_name,
             "superclass": superclass,
             "interfaces": interfaces,
-            "access": class_access,
             "provenance": provenance,
             "fields": fields,
             "methods": methods,
