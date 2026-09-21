@@ -59,7 +59,7 @@ def main(matches_file=None, mapping_file=None):
 
             for method in match.get("methods", []):
                 total_methods += 1
-                desc = method.get("target_descriptor", "")
+                desc = method.get("target_method_descriptor", "")
                 tgt_name = method.get("target_method_name", "")
                 lib_name = method.get("library_method_name", "")
 
@@ -70,7 +70,7 @@ def main(matches_file=None, mapping_file=None):
                 out.write(f"\tm\t{desc}\t{tgt_name}\t{lib_name}\n")
 
             for field in match.get("fields", []):
-                desc = field.get("target_descriptor", "")
+                desc = field.get("target_field_descriptor", "")
                 tgt_name = field.get("target_field_name", "")
                 lib_name = field.get("library_field_name", "")
 
