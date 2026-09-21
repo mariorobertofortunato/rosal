@@ -4,6 +4,11 @@ import json
 import sys
 from pathlib import Path
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = lambda x, **kwargs: x
+
 
 def clean_name(name):
     if name.startswith("L") and name.endswith(";"):
@@ -39,7 +44,7 @@ def main(matches_file=None, mapping_file=None):
 
         out.write("tiny\t2\t0\tobf\tnamed\n")
 
-        for match in matches:
+        for match in tqdm(matches, total=len(matches), desc="Processing matches", colour="green"):
             real = clean_name(match["library_class"])  
             obf = clean_name(match["target_class"])     
 
@@ -55,8 +60,8 @@ def main(matches_file=None, mapping_file=None):
             for method in match.get("methods", []):
                 total_methods += 1
                 desc = method.get("target_descriptor", "")
-                tgt_name = method.get("target_name", "")
-                lib_name = method.get("library_name", "")
+                tgt_name = method.get("target_method_name", "")
+                lib_name = method.get("library_method_name", "")
 
                 if not valid_descriptor(desc):
                     skipped += 1
@@ -66,8 +71,8 @@ def main(matches_file=None, mapping_file=None):
 
             for field in match.get("fields", []):
                 desc = field.get("target_descriptor", "")
-                tgt_name = field.get("target_name", "")
-                lib_name = field.get("library_name", "")
+                tgt_name = field.get("target_field_name", "")
+                lib_name = field.get("library_field_name", "")
 
                 if not valid_descriptor(desc):
                     skipped += 1

@@ -47,99 +47,10 @@ def extract_class_descriptors(value):
     return set(CLASS_DESCRIPTOR_RE.findall(value))
 
 
-def normalize_annotation_value(value):
-    try:
-        obj = value.get_obj()
-    except Exception:
-        return repr(value)
-
-    if isinstance(obj, (str, int, float, bool)):
-        return obj
-
-    if isinstance(obj, (list, tuple)):
-        return [
-            normalize_annotation_value(x)
-            for x in obj
-        ]
-
-    return repr(obj)
-
-
-def extract_annotations(cls):
-    result = []
-
-    try:
-        annotation_data = cls.get_annotations()
-
-        if annotation_data is None:
-            return result
-
-        if hasattr(annotation_data, "get_annotations"):
-            annotations = annotation_data.get_annotations()
-
-        elif hasattr(annotation_data, "get_annotation_off_item"):
-            annotations = []
-
-            for off_item in (annotation_data.get_annotation_off_item()):
-                try:
-                    annotation = (off_item.get_annotation_item())
-
-                    if annotation is not None:
-                        annotations.append(annotation)
-
-                except Exception:
-                    continue
-
-        elif isinstance(annotation_data, (list, tuple)):
-            annotations = annotation_data
-
-        else:
-            return result
-
-        for annotation in annotations:
-            try:
-                encoded = (
-                    annotation.get_annotation()
-                    if hasattr(annotation, "get_annotation")
-                    else annotation
-                )
-
-                if not hasattr(encoded, "get_type"):
-                    continue
-
-                annotation_type = encoded.get_type()
-
-                elements = {}
-
-                if hasattr(encoded, "get_elements"):
-                    for element in encoded.get_elements():
-                        try:
-                            name = (element.get_name())
-                            value = (normalize_annotation_value(element.get_value()))
-                            elements[name] = value
-
-                        except Exception:
-                            continue
-
-                result.append({
-                    "type": annotation_type,
-                    "elements": elements,
-                })
-
-            except Exception:
-                continue
-
-    except Exception:
-        return result
-
-    return result
-
-
 def extract_method(method):
     code = method.get_code()
 
     n_insns = 0
-    fp = None
     strings = set()
     numbers = set()
     api_refs = set()
@@ -153,14 +64,12 @@ def extract_method(method):
     )
 
     if code is not None:
-        mnemonics = []
 
         for ins in code.get_bc().get_instructions():
             n_insns += 1
 
             name = ins.get_name()
 
-            mnemonics.append(name)
             opcodes.append(name)
 
             try:
@@ -182,42 +91,24 @@ def extract_method(method):
 
                 class_refs.update(extract_class_descriptors(value))
 
-                if (
-                    name.startswith("const-string")
-                    and isinstance(value, str)
-                ):
+                if (name.startswith("const-string") and isinstance(value, str)):
                     strings.add(strip_string_literal(value))
 
-                if (
-                    name.startswith("const")
-                    and isinstance(value,(int, float))
-                ):
+                if (name.startswith("const") and isinstance(value,(int, float))):
                     numbers.add(value)
 
-                if (
-                    name.startswith("invoke")
-                    and isinstance(value, str)
-                ):
+                if (name.startswith("invoke") and isinstance(value, str)):
                     value = normalize_descriptor(value)
 
                     invokes.add(value)
 
-                    if value.startswith((
-                        "Landroid/",
-                        "Ljava/",
-                        "Ljavax/",
-                    )):
+                    if value.startswith(("Landroid/", "Ljava/", "Ljavax/")):
                         api_refs.add(value)
-
-        fp_input = ("|".join(mnemonics) + "|" + descriptor)
-
-        fp = hashlib.sha256(fp_input.encode("utf-8")).hexdigest()
 
     return {
         "method_name": method.get_name(),
         "method_descriptor": descriptor,
         "method_access": method.get_access_flags(),
-        "fp": fp,
         "n_insns": n_insns,
         "opcodes": opcodes,
         "method_strings": sorted(strings),
@@ -248,11 +139,6 @@ def extract_dex_features(dex_path, provenance, label):
         class_name = cls.get_name()
         fields = []
         methods = []
-        class_strings = set()
-        class_numbers = set()
-        class_api_refs = set()
-        class_invokes = set()
-        class_refs = set()
 
         # fields
         for field in cls.get_fields():
@@ -260,49 +146,17 @@ def extract_dex_features(dex_path, provenance, label):
 
             fields.append(extracted_field)
 
-            class_refs.update(
-                extract_class_descriptors(extracted_field["field_descriptor"])
-            )
-
-        # methods (and strings, numbers, api_refs, invokes, class_refs)
+        # methods
         for method in cls.get_methods():
             extracted_method = extract_method(method)
 
             methods.append(extracted_method)
-
-            class_strings.update(extracted_method["method_strings"])
-
-            class_numbers.update(extracted_method["method_numbers"])
-
-            class_api_refs.update(extracted_method["method_api_refs"])
-
-            class_invokes.update(extracted_method["method_invokes"])
-
-            class_refs.update(extracted_method["method_class_refs"])
-
-        # annotations
-        extracted_annotations = extract_annotations(cls)
-
-        annotation_types = sorted(
-            annotation["type"]
-            for annotation in extracted_annotations
-        )
-
-        for annotation_type in annotation_types:
-            class_refs.update(
-                extract_class_descriptors(annotation_type)
-            )
 
         # interfaces
         try:
             interfaces = cls.get_interfaces()
         except Exception:
             interfaces = []
-
-        for interface in interfaces:
-            class_refs.update(
-                extract_class_descriptors(interface)
-            )
 
         interfaces = sorted([normalize_descriptor(i) for i in interfaces if i])
 
@@ -312,17 +166,12 @@ def extract_dex_features(dex_path, provenance, label):
         except Exception:
             superclass = None
 
-        class_refs.update(
-            extract_class_descriptors(superclass)
-        )
-
         # class access
         try:
             class_access = cls.get_access_flags()
         except Exception:
             class_access = 0
 
-        class_refs.discard(class_name)
 
         yield {
             "class_name": class_name,
@@ -332,13 +181,6 @@ def extract_dex_features(dex_path, provenance, label):
             "provenance": provenance,
             "fields": fields,
             "methods": methods,
-            "annotations": extracted_annotations,
-            "annotation_types": annotation_types,
-            "strings": sorted(class_strings),
-            "numbers": sorted(class_numbers),
-            "api_refs": sorted(class_api_refs),
-            "invokes": sorted(class_invokes),
-            "class_refs": sorted(class_refs),
         }
 
 

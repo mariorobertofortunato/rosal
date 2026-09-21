@@ -74,12 +74,13 @@ class MethodInfo:
     name: str
     descriptor: str         
     access: int
+    n_insns: int
     has_body: bool
     strings: frozenset[str]
+    numbers: frozenset
     api_refs: frozenset[str]
     class_refs: frozenset[str]
     invokes: frozenset[str]
-    annotation_types: frozenset[str]
 
     def is_concrete(self) -> bool:
         return self.name not in rosal.CONSTRUCTOR_NAMES and self.has_body
@@ -87,18 +88,19 @@ class MethodInfo:
     def has_anchor_evidence(self) -> bool:
         return bool(
             self.strings or self.api_refs or self.class_refs
-            or self.invokes or self.annotation_types
+            or self.invokes
         )
 
     def anchor_key(self):
         return (
             self.descriptor,
             self.access,
+            self.n_insns,
             tuple(sorted(self.strings)),
+            tuple(sorted(self.numbers)),
             tuple(sorted(self.api_refs)),
             tuple(sorted(self.class_refs)),
             tuple(sorted(self.invokes)),
-            tuple(sorted(self.annotation_types)),
         )
 
 
@@ -147,14 +149,13 @@ def make_method(raw: dict) -> MethodInfo:
         name=raw.get("method_name", ""),
         descriptor=normalize_descriptor(raw.get("method_descriptor", "")),
         access=raw.get("method_access", 0),
+        n_insns=raw.get("n_insns", 0),
         has_body=bool(raw.get("opcodes")),
         strings=frozenset(raw.get("method_strings", [])),
+        numbers=frozenset(raw.get("method_numbers", [])),
         api_refs=frozenset(x for x in raw.get("method_api_refs", []) if is_platform_ref(x)),
         class_refs=frozenset(x for x in raw.get("method_class_refs", []) if is_platform_ref(x)),
         invokes=frozenset(x for x in raw.get("method_invokes", []) if is_platform_ref(x)),
-        annotation_types=frozenset(
-            x for x in raw.get("annotation_types", []) if is_platform_ref(x)
-        ),
     )
 
 
@@ -276,12 +277,12 @@ def anchors_are_distinct(anchors) -> bool:
     return len(set(libs)) == len(libs)
 
 
-def build_mapping(target_item, library_item) -> dict:
+def build_mapping(target_item, library_item, label) -> dict:
     return {
-        "library_name": library_item.name,
-        "target_name": target_item.name,
-        "library_descriptor": library_item.descriptor,
-        "target_descriptor": target_item.descriptor,
+        f"library_{label}_name": library_item.name,
+        f"target_{label}_name": target_item.name,
+        f"library_{label}_descriptor": library_item.descriptor,
+        f"target_{label}_descriptor": target_item.descriptor,
     }
 
 
@@ -299,10 +300,10 @@ def verify_class(target_cls: ClassInfo, library_cls: ClassInfo, library_method_i
         return None
 
     method_mappings = [
-        build_mapping(target_method, library_method) for target_method, library_method in method_anchors if target_method.name != library_method.name
+        build_mapping(target_method, library_method, "method") for target_method, library_method in method_anchors if target_method.name != library_method.name
     ]
     field_mappings = [
-        build_mapping(target_field, library_field) for target_field, library_field in field_anchors if target_field.name != library_field.name
+        build_mapping(target_field, library_field, "field") for target_field, library_field in field_anchors if target_field.name != library_field.name
     ]
 
     if not method_mappings and not field_mappings and not method_anchors and not field_anchors:
