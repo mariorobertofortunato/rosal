@@ -72,7 +72,8 @@ def descriptor_is_level_a(normalized_desc: str) -> bool:
 @dataclass(frozen=True)
 class MethodInfo:
     name: str
-    descriptor: str         
+    descriptor: str  
+    descriptor_raw: str        
     access: int
     n_insns: int
     has_body: bool
@@ -107,7 +108,8 @@ class MethodInfo:
 @dataclass(frozen=True)
 class FieldInfo:
     name: str
-    descriptor: str         
+    descriptor: str       
+    descriptor_raw: str    
     access: int
 
     def has_anchor_evidence(self) -> bool:
@@ -148,6 +150,7 @@ def make_method(raw: dict) -> MethodInfo:
     return MethodInfo(
         name=raw.get("method_name", ""),
         descriptor=normalize_descriptor(raw.get("method_descriptor", "")),
+        descriptor_raw=raw.get("method_descriptor", ""),
         access=raw.get("method_access", 0),
         n_insns=raw.get("n_insns", 0),
         has_body=bool(raw.get("opcodes")),
@@ -163,6 +166,7 @@ def make_field(raw: dict) -> FieldInfo:
     return FieldInfo(
         name=raw.get("field_name", ""),
         descriptor=normalize_descriptor(raw.get("field_descriptor", "")),
+        descriptor_raw=raw.get("field_descriptor", ""),
         access=raw.get("field_access", 0),
     )
 
@@ -282,7 +286,9 @@ def build_mapping(target_item, library_item, label) -> dict:
         f"library_{label}_name": library_item.name,
         f"target_{label}_name": target_item.name,
         f"library_{label}_descriptor": library_item.descriptor,
+        f"library_{label}_descriptor_raw": library_item.descriptor_raw,
         f"target_{label}_descriptor": target_item.descriptor,
+        f"target_{label}_descriptor_raw": target_item.descriptor_raw,
     }
 
 

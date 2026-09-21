@@ -36,8 +36,11 @@ def main(matches_file=None, mapping_file=None):
         return
 
     seen = set()
-    skipped = 0
+
     total_methods = 0
+    methods_skipped = 0
+    total_fields = 0
+    fields_skipped = 0
 
     mapping_file.parent.mkdir(parents=True, exist_ok=True)
     with mapping_file.open(mode="w", encoding="utf-8") as out:
@@ -59,29 +62,31 @@ def main(matches_file=None, mapping_file=None):
 
             for method in match.get("methods", []):
                 total_methods += 1
-                desc = method.get("target_method_descriptor", "")
+                desc = method.get("target_method_descriptor_raw", "")
                 tgt_name = method.get("target_method_name", "")
                 lib_name = method.get("library_method_name", "")
 
                 if not valid_descriptor(desc):
-                    skipped += 1
+                    methods_skipped += 1
                     continue
 
                 out.write(f"\tm\t{desc}\t{tgt_name}\t{lib_name}\n")
 
             for field in match.get("fields", []):
-                desc = field.get("target_field_descriptor", "")
+                total_fields += 1
+                desc = field.get("target_field_descriptor_raw", "")
                 tgt_name = field.get("target_field_name", "")
                 lib_name = field.get("library_field_name", "")
 
                 if not valid_descriptor(desc):
-                    skipped += 1
+                    fields_skipped += 1
                     continue
 
                 out.write(f"\tf\t{desc}\t{tgt_name}\t{lib_name}\n")
 
     print(f"[+] accepted : {len(seen)}")
-    print(f"[+] methods  : {total_methods - skipped}/{total_methods} (skipped: {skipped})")
+    print(f"[+] methods  : {total_methods - methods_skipped}/{total_methods} (skipped: {methods_skipped})")
+    print(f"[+] fields   : {total_fields - fields_skipped}/{total_fields} (skipped: {fields_skipped})")
     print(f"[+] output   : {mapping_file.absolute()}\n")
 
 
