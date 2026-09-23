@@ -13,7 +13,7 @@ readme = "README.md"
 keywords = ["android", "reverse engineering", "R8", "ProGuard", "deobfuscation", "kotlin", "Java", "JADX"]
 
 dependencies = [
-  "androguard>=4.1.3",
+  "androguard>=4.1.4",
   "loguru>=0.7.2",
   "tqdm>=4.66.0",
 ]

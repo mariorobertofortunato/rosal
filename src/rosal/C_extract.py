@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import hashlib
 import json
 import re
 import sys
@@ -190,12 +189,12 @@ def main(target_dex_dir=None, features_file=None):
 
     features_file.parent.mkdir(parents=True, exist_ok=True)
 
-    with features_file.open(mode="w", encoding="utf-8") as output_handle:
+    with features_file.open(mode="w", encoding="utf-8", errors="ignore") as output_handle:
 
         for dex_path in dex_files:
             provenance = dex_path.stem
 
-            for feature in extract_dex_features(dex_path,provenance, label="target"):
+            for feature in extract_dex_features(dex_path, provenance, label="target"):
                 output_handle.write(
                     json.dumps(
                         feature,
