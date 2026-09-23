@@ -2,9 +2,10 @@
 
 import json
 import sys
-import rosal
 from collections import defaultdict
-from dataclasses import dataclass
+from rosal.models import ClassInfo, MethodInfo, FieldInfo
+from rosal.utils import class_package, normalize_descriptor, is_platform_ref
+
 from pathlib import Path
 
 from .C_extract import extract_dex_features
@@ -13,133 +14,6 @@ try:
     from tqdm import tqdm
 except ImportError:
     tqdm = lambda x, **kwargs: x
-
-
-# --------------------------------------------------------------------------- #
-# Descriptor helpers
-# --------------------------------------------------------------------------- #
-
-def class_package(class_name: str) -> str:
-    if not isinstance(class_name, str):
-        return ""
-    pos = class_name.rfind("/")
-    return class_name if pos == -1 else class_name[:pos]
-
-
-def is_platform_ref(value) -> bool:
-    return isinstance(value, str) and value.startswith(rosal.PLATFORM_PREFIXES)
-
-
-def normalize_descriptor(desc: str) -> str:
-    """Substitutes app's internal types with 'L?;', leaving intact
-    primitives, arrays and references to platform classes."""
-    if not isinstance(desc, str):
-        return ""
-
-    out = []
-    i = 0
-    while i < len(desc):
-        c = desc[i]
-
-        if c == "[" or c in "VZBSCIJFD":
-            out.append(c)
-            i += 1
-            continue
-
-        if c == "L":
-            end = desc.find(";", i)
-            if end == -1:
-                return desc
-            ref = desc[i:end + 1]
-            out.append(ref if is_platform_ref(ref) else "L?;")
-            i = end + 1
-            continue
-
-        out.append(c)
-        i += 1
-
-    return "".join(out)
-
-
-def descriptor_is_level_a(normalized_desc: str) -> bool:
-    return "L?;" not in normalized_desc
-
-
-# --------------------------------------------------------------------------- #
-# Models
-# --------------------------------------------------------------------------- #
-
-@dataclass(frozen=True)
-class MethodInfo:
-    name: str
-    descriptor: str  
-    descriptor_raw: str        
-    access: int
-    n_insns: int
-    has_body: bool
-    strings: frozenset[str]
-    numbers: frozenset
-    api_refs: frozenset[str]
-    class_refs: frozenset[str]
-    invokes: frozenset[str]
-
-    def is_concrete(self) -> bool:
-        return self.name not in rosal.CONSTRUCTOR_NAMES and self.has_body
-
-    def has_anchor_evidence(self) -> bool:
-        return bool(
-            self.strings or self.api_refs or self.class_refs
-            or self.invokes
-        )
-
-    def anchor_key(self):
-        return (
-            self.descriptor,
-            self.access,
-            self.n_insns,
-            tuple(sorted(self.strings)),
-            tuple(sorted(self.numbers)),
-            tuple(sorted(self.api_refs)),
-            tuple(sorted(self.class_refs)),
-            tuple(sorted(self.invokes)),
-        )
-
-
-@dataclass(frozen=True)
-class FieldInfo:
-    name: str
-    descriptor: str       
-    descriptor_raw: str    
-    access: int
-
-    def has_anchor_evidence(self) -> bool:
-        return descriptor_is_level_a(self.descriptor)
-
-    def anchor_key(self):
-        return (self.descriptor, self.access)
-
-
-@dataclass
-class ClassInfo:
-    class_name: str
-    package: str
-    superclass: str | None
-    interfaces: frozenset
-    methods: list[MethodInfo]
-    fields: list[FieldInfo]
-    provenance: str | None = None
-
-    @property
-    def platform_superclass(self):
-        return self.superclass if is_platform_ref(self.superclass) else None
-
-    @property
-    def platform_interfaces(self):
-        return frozenset(x for x in self.interfaces if is_platform_ref(x))
-
-    def lookup_key(self):
-        """(package, superclass)"""
-        return (self.package, self.platform_superclass)
 
 
 # --------------------------------------------------------------------------- #
