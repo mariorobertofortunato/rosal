@@ -6,6 +6,9 @@ import sys
 from pathlib import Path
 from androguard.core.dex import DEX
 
+from rosal.models import ClassInfo, MethodInfo, FieldInfo
+from rosal.utils import is_platform_ref, normalize_descriptor
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -32,7 +35,7 @@ def strip_string_literal(value):
 
     return value
 
-def normalize_descriptor(descriptor):
+def strip_descriptor_spaces(descriptor):
     if not isinstance(descriptor, str):
         return descriptor
     return descriptor.replace(" ", "")
@@ -42,11 +45,11 @@ def extract_class_descriptors(value):
     if not isinstance(value, str):
         return set()
 
-    value = normalize_descriptor(value)
+    value = strip_descriptor_spaces(value)
     return set(CLASS_DESCRIPTOR_RE.findall(value))
 
 
-def extract_method(method):
+def extract_method(method) -> MethodInfo:
     code = method.get_code()
 
     n_insns = 0
@@ -56,10 +59,10 @@ def extract_method(method):
     invokes = set()
     class_refs = set()
     opcodes = []
-    descriptor = normalize_descriptor(method.get_descriptor())
+    descriptor_raw = strip_descriptor_spaces(method.get_descriptor())
 
     class_refs.update(
-        extract_class_descriptors(descriptor)
+        extract_class_descriptors(descriptor_raw)
     )
 
     if code is not None:
@@ -97,38 +100,39 @@ def extract_method(method):
                     numbers.add(value)
 
                 if (name.startswith("invoke") and isinstance(value, str)):
-                    value = normalize_descriptor(value)
+                    value = strip_descriptor_spaces(value)
 
                     invokes.add(value)
 
-                    if value.startswith(("Landroid/", "Ljava/", "Ljavax/")):
+                    if is_platform_ref(value):
                         api_refs.add(value)
 
-    return {
-        "method_name": method.get_name(),
-        "method_descriptor": descriptor,
-        "method_access": method.get_access_flags(),
-        "n_insns": n_insns,
-        "opcodes": opcodes,
-        "method_strings": sorted(strings),
-        "method_numbers": sorted(numbers),
-        "method_api_refs": sorted(api_refs),
-        "method_invokes": sorted(invokes),
-        "method_class_refs": sorted(class_refs),
-    }
+    return MethodInfo(
+        name=method.get_name(),
+        descriptor=normalize_descriptor(descriptor_raw),
+        descriptor_raw=descriptor_raw,
+        access=method.get_access_flags(),
+        n_insns=n_insns,
+        has_body=n_insns > 0,
+        strings=frozenset(strings),
+        numbers=frozenset(numbers),
+        api_refs=frozenset(api_refs),
+        class_refs=frozenset(x for x in class_refs if is_platform_ref(x)),
+        invokes=frozenset(x for x in invokes if is_platform_ref(x)),
+    )
 
 
-def extract_field(field):
-    return {
-        "field_name": field.get_name(),
-        "field_descriptor": normalize_descriptor(field.get_descriptor()),
-        "field_access": field.get_access_flags(),
-    }
+def extract_field(field) -> FieldInfo:
+    descriptor_raw = strip_descriptor_spaces(field.get_descriptor())
+    return FieldInfo(
+        name=field.get_name(),
+        descriptor=normalize_descriptor(descriptor_raw),
+        descriptor_raw=descriptor_raw,
+        access=field.get_access_flags(),
+    )
 
-# Keep in mind that this method is also used for extracting features 
-# from library dex (so name variables accordingly = generalizing, is ok. 
-# Basically DONT TOUCH THIS UNLESS EXTREMELY NECESSARY)
-def extract_dex_features(dex_path, provenance, label):
+
+def extract_classes(dex_path, provenance, label):
     data = dex_path.read_bytes()
 
     dex = DEX(data)
@@ -157,56 +161,30 @@ def extract_dex_features(dex_path, provenance, label):
         except Exception:
             interfaces = []
 
-        interfaces = sorted([normalize_descriptor(i) for i in interfaces if i])
+        interfaces = sorted([strip_descriptor_spaces(i) for i in interfaces if i])
 
         # superclass
         try:
-            superclass = normalize_descriptor(cls.get_superclassname())
+            superclass = strip_descriptor_spaces(cls.get_superclassname())
         except Exception:
             superclass = None
 
-        yield {
-            "class_name": class_name,
-            "superclass": superclass,
-            "interfaces": interfaces,
-            "provenance": provenance,
-            "fields": fields,
-            "methods": methods,
-        }
+        yield ClassInfo(
+            class_name=class_name,
+            superclass=superclass,
+            interfaces=frozenset(interfaces),
+            provenance=provenance,
+            fields=fields,
+            methods=methods,
+        )
 
 
-def main(target_dex_dir=None, features_file=None):
-
-    if target_dex_dir is None or features_file is None:
-        sys.exit("ERROR: target_dex_dir and features_file must be provided")
-    
-    target_dex_dir = Path(target_dex_dir)
-    features_file = Path(features_file)
-    dex_files = sorted(target_dex_dir.glob("*.dex"))
-
-    if not dex_files:
-        sys.exit(f"No DEX files found in {target_dex_dir}")
-
-    features_file.parent.mkdir(parents=True, exist_ok=True)
-
-    with features_file.open(mode="w", encoding="utf-8", errors="ignore") as output_handle:
-
-        for dex_path in dex_files:
-            provenance = dex_path.stem
-
-            for feature in extract_dex_features(dex_path, provenance, label="target"):
-                output_handle.write(
-                    json.dumps(
-                        feature,
-                        ensure_ascii=False,
-                        separators=(",", ":"),
-                    )
-                    + "\n"
-                )
-
-    print(f"[+] Extracting target features complete")
-    print(f"[+] output: {features_file}\n")
-
-
-if __name__ == "__main__":
-    main()
+def extract_from_dex(paths, label) -> list[ClassInfo]:
+    classes = []
+    for p in paths:
+        p = Path(p)
+        if not p.is_file():
+            sys.exit(f"ERROR: DEX not found: {p}")
+        classes.extend(extract_classes(p, p.name, label=label))
+    print(f"[+] Extracting {label} features complete\n")
+    return classes

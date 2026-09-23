@@ -4,7 +4,7 @@ import argparse
 import rosal
 from pathlib import Path
 
-from rosal import A_prep, B_fetch, C_extract, D_match, E_map
+from rosal import A_prep, B_fetch, D_match, E_map
 
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -34,7 +34,6 @@ def main(argv=None):
     markers_file = work_dir / "markers.txt"
     target_dex_dir = work_dir / "target_dex"
     library_dex_dir = work_dir / "library_dex"
-    features_file = work_dir / "features.ndjson"
     matches_file = work_dir / "matches.json"
     mapping_file = work_dir / "matches.tiny"
 
@@ -44,8 +43,7 @@ def main(argv=None):
         parser.error("provide --apk")
 
     B_fetch.main(markers_file, library_dex_dir)
-    C_extract.main(target_dex_dir, features_file)
-    D_match.main(library_dex_dir, features_file, matches_file)
+    D_match.main(library_dex_dir, target_dex_dir, matches_file)
     E_map.main(matches_file, mapping_file)
 
     print(f"[+] mapping: {mapping_file}")

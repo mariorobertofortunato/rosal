@@ -13,7 +13,7 @@ def _apk_path(apk=None):
     return path
 
 
-def extract_target_dex(apk, destination):
+def fetch_target_dex(apk, destination):
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
 
@@ -33,8 +33,6 @@ def extract_target_dex(apk, destination):
             output = destination / Path(name).name
             output.write_bytes(archive.read(name))
             paths.append(output)
-
-    #return paths
 
 
 def create_markers(apk, markers_file):
@@ -56,12 +54,10 @@ def create_markers(apk, markers_file):
         "".join(f"{marker}\n" for marker in markers),
         encoding="utf-8",
     )
-    #return destination
 
 
 def main(apk=None, markers_file=None, target_dex_dir=None):
-    #work_dir = Path(work_dir).expanduser().resolve()
-    extract_target_dex(apk, target_dex_dir)
+    fetch_target_dex(apk, target_dex_dir)
     create_markers(apk, markers_file)
 
 

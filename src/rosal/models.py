@@ -2,7 +2,7 @@
 
 import rosal
 from dataclasses import dataclass
-from rosal.utils import is_platform_ref, descriptor_is_level_a
+from rosal.utils import class_package, is_platform_ref, descriptor_is_level_a
 
 @dataclass(frozen=True)
 class MethodInfo:
@@ -57,12 +57,15 @@ class FieldInfo:
 @dataclass
 class ClassInfo:
     class_name: str
-    package: str
     superclass: str | None
     interfaces: frozenset
     methods: list[MethodInfo]
     fields: list[FieldInfo]
     provenance: str | None = None
+
+    @property
+    def package(self) -> str:
+        return class_package(self.class_name)
 
     @property
     def platform_superclass(self):

@@ -2,62 +2,16 @@
 
 import json
 import sys
-from collections import defaultdict
-from rosal.models import ClassInfo, MethodInfo, FieldInfo
-from rosal.utils import class_package, normalize_descriptor, is_platform_ref
-
 from pathlib import Path
+from collections import defaultdict
+from rosal.models import ClassInfo
 
-from .C_extract import extract_dex_features
+from .C_extract import extract_from_dex
 
 try:
     from tqdm import tqdm
 except ImportError:
     tqdm = lambda x, **kwargs: x
-
-
-# --------------------------------------------------------------------------- #
-# Model builders
-# --------------------------------------------------------------------------- #
-
-def make_method(raw: dict) -> MethodInfo:
-    return MethodInfo(
-        name=raw.get("method_name", ""),
-        descriptor=normalize_descriptor(raw.get("method_descriptor", "")),
-        descriptor_raw=raw.get("method_descriptor", ""),
-        access=raw.get("method_access", 0),
-        n_insns=raw.get("n_insns", 0),
-        has_body=bool(raw.get("opcodes")),
-        strings=frozenset(raw.get("method_strings", [])),
-        numbers=frozenset(raw.get("method_numbers", [])),
-        api_refs=frozenset(x for x in raw.get("method_api_refs", []) if is_platform_ref(x)),
-        class_refs=frozenset(x for x in raw.get("method_class_refs", []) if is_platform_ref(x)),
-        invokes=frozenset(x for x in raw.get("method_invokes", []) if is_platform_ref(x)),
-    )
-
-
-def make_field(raw: dict) -> FieldInfo:
-    return FieldInfo(
-        name=raw.get("field_name", ""),
-        descriptor=normalize_descriptor(raw.get("field_descriptor", "")),
-        descriptor_raw=raw.get("field_descriptor", ""),
-        access=raw.get("field_access", 0),
-    )
-
-
-def make_class(entry: dict) -> ClassInfo:
-    class_name = entry.get("class_name", "")
-    return ClassInfo(
-        class_name=class_name,
-        package=class_package(class_name),
-        superclass=entry.get("superclass"),
-        interfaces=frozenset(
-            x for x in entry.get("interfaces", []) if isinstance(x, str)
-        ),
-        methods=[make_method(m) for m in entry.get("methods", [])],
-        fields=[make_field(f) for f in entry.get("fields", [])],
-        provenance=entry.get("provenance"),
-    )
 
 
 # --------------------------------------------------------------------------- #
@@ -200,16 +154,6 @@ def verify_class(target_cls: ClassInfo, library_cls: ClassInfo, library_method_i
 # I/O e main
 # --------------------------------------------------------------------------- #
 
-def extract_all_library_dex(paths):
-    classes = []
-    for p in paths:
-        p = Path(p)
-        if not p.is_file():
-            sys.exit(f"ERROR: DEX not found: {p}")
-        classes.extend(extract_dex_features(p, p.name, label="library"))
-    print(f"[+] Extracting library features complete\n")
-    return classes
-
 
 def match_classes(
     target_classes: list[ClassInfo],
@@ -269,33 +213,22 @@ def match_classes(
     return matches
 
 
-def main(library_dex_dir=None, features_file=None, matches_file=None):
+def main(library_dex_dir=None, target_dex_dir=None, matches_file=None):
 
-    if library_dex_dir is None or features_file is None or matches_file is None:
-        sys.exit("ERROR: library_dex_dir, features_file and matches_file must be specified")
+    if library_dex_dir is None or target_dex_dir is None or matches_file is None:
+        sys.exit("ERROR: library_dex_dir, target_dex_dir and matches_file must be specified")
 
-    if not features_file.is_file():
-        sys.exit(f"ERROR: features not found: {features_file}")
-
-    dex_paths = list(library_dex_dir.glob("*.dex"))
-    features_file = Path(features_file)
+    library_dex_paths = list(library_dex_dir.glob("*.dex"))
+    target_dex_paths = list(target_dex_dir.glob("*.dex"))
     matches_file = Path(matches_file)
 
 
     # Target classes
-    target_classes = []
-    with features_file.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            target_classes.append(make_class(json.loads(line)))
+    target_classes = extract_from_dex(target_dex_paths, label="target")
 
     # Library classes
-    library_classes = [
-        make_class(entry) for entry in extract_all_library_dex(dex_paths)
-    ]
-    
+    library_classes = extract_from_dex(library_dex_paths, label="library")
+
     matches = match_classes(target_classes, library_classes)
 
     output = {
