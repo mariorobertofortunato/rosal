@@ -43,6 +43,7 @@ def main(argv=None):
         parser.error("provide --apk")
 
     B_fetch.main(markers_file, library_dex_dir)
+    # there's no C-extract explicit phase, it's integrated in the matching phase for both target and libray
     D_match.main(library_dex_dir, target_dex_dir, matches_file)
     E_map.main(matches_file, mapping_file)
 

@@ -7,7 +7,7 @@ It helps recover actual names for classes like RecyclerView, LiveData, Fragment,
 
 The mapping is limited to the classes from the standard libraries: it does not involve the mapping of the proprietary classes of the app.
 
-Fully deterministic, no heuristics.
+Fully deterministic, exact structural matching. No heuristics, no similarity scoring.
 No AI is involved in the process.
 
 ```text
@@ -21,7 +21,7 @@ Don't be a cunt.
 
 R8/ProGuard can rename any class, method or field that belongs to the app itself, but cannot rename references to platform APIs (`android/*`, `java/*`, `javax/*`). Those symbols must stay intact to be resolved by the OS at runtime.
 
-Rosal treats every reference to a platform API found inside a method (a call, a parameter type, an annotation type, a superclass) as an **anchor** = something that the obfuscator can't touch. 
+Rosal treats every reference to a platform API found inside a method as an **anchor** = something that the obfuscator can't touch. 
 Two methods that share the exact same set of anchors are, with very high confidence, the same method.
 
 The standard libraries used in the matching process are not a fixed set of references. 
